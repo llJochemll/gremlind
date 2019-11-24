@@ -1,0 +1,15 @@
+{
+	"authors": [
+		"lljochemll"
+	],
+	"copyright": "Copyright © 2019, lljochemll",
+	"dependencies": {
+		"vibe-d:core": "~>0.8.0",
+		"vibe-d:data": "~>0.8.0",
+		"vibe-d:http": "~>0.8.0",
+		"vibe-d:inet": "~>0.8.0"
+	},
+	"description": "Gremlin client",
+	"license": "MIT",
+	"name": "gremlind"
+}
