@@ -9,9 +9,10 @@ import vibe.data.json;
 import std.datetime;
 import std.algorithm;
 import std.array;
+import vibe.core.core;
 
 void main() {
-	auto client = GremlinClient(
+	auto client = new GremlinClient(
 		URL("wss://jochem-graph.gremlin.cosmos.azure.com:443/"),
 		"/dbs/cloudclass/colls/core",
 		"5TY7et7NKb0qxfkW2LJ7i4nk8pbxlfZxARUNHcD3bxer5ROyauNpiHxisXfErQWEWv2tLTAtHVHx4A6K2Jh3XA=="
@@ -19,35 +20,14 @@ void main() {
 
 	temp(client);
 	temp(client);
-	temp(client);
-}
-
-import vibe.http.client;
-
-class S {
-	int id = 0;
-	string a;
 }
 
 void temp(GremlinClient client) {
-	auto s = new S();
-	s.a = "lol";
-
 	auto start = Clock.currTime;
 	Future!(GremlinClientResponse)[] tasks;
 
-	
-
-	foreach (i; 0 .. 150) {
-		/*auto fut = async(function(string a) {
-
-			import vibe.core.core;
-			sleep(1000.msecs);
-
-			return new GremlinClientResponse();
-		}, s.a);*/
-		auto fut = client.queryAsync(`g.V().hasLabel("user")`);
-		tasks ~= fut;
+	foreach (i; 0 .. 10) {
+		tasks ~= client.queryAsync(`g.V().hasLabel("user")`);
 	}
 
 	writeln(Clock.currTime - start);
@@ -59,5 +39,4 @@ void temp(GremlinClient client) {
 		results ~= task.getResult();
 	}
 	writeln(Clock.currTime - start);
-	//writeln(results[150].result);
 }
