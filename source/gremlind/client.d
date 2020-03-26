@@ -3,7 +3,7 @@ module gremlind.client;
 import std.conv;
 import std.string;
 import std.uuid;
-import vibe.core.concurrency : async, makeIsolated, assumeIsolated;
+import vibe.core.concurrency : async;
 import vibe.core.core;
 import vibe.core.connectionpool;
 import vibe.data.json;
@@ -34,12 +34,11 @@ class GremlinClient {
     }
 
     auto query(string queryString) {
-        return m_connection.query(queryString);
+        return queryAsync(queryString).getResult;
     }
 
-    @trusted
     auto queryAsync(string queryString) {
-        return async(&(this.query), queryString);
+        return m_connection.query(queryString);
     }
 
     private {
@@ -53,11 +52,10 @@ class GremlinClient {
 @safe
 class GremlinClientResponse {
     Response.Status status;
-    Json result;
+    Json data;
 
-    this(Request request) {
-        this.status = request.response.status;
-        this.result = request.response.result;
+    this() {
+        data = Json.emptyArray;
     }
 }
 
@@ -67,7 +65,7 @@ private class GremlinConnection {
     string m_user;
     string m_password;
     WebSocket m_socket;
-    Request[UUID] m_requests;
+    GremlinClientResponse[UUID] m_responses;
 
     this(URL url, string user, string password) {
         m_url = url;
@@ -82,9 +80,10 @@ private class GremlinConnection {
     }
 
     void authenticate() {
-        auto request = new Request;
+        Request request;
         request.requestId = randomUUID;
         request.op = "authentication";
+        request.args = Json.emptyObject;
         request.args["SASL"] = Json("\0" ~ m_user ~ "\0" ~ m_password);
 
         send(request);
@@ -113,32 +112,35 @@ private class GremlinConnection {
                 continue;
             }
 
-            if (response.requestId in m_requests) {
-                m_requests[response.requestId].response = response;
+            m_responses[response.requestId].data ~= response.result;
+
+            if (response.status.code == HTTPStatus.PartialContent) {
+                continue;
             }
+
+            m_responses[response.requestId].status = response.status;
         }
     }
 
     @trusted
     auto query(string queryString) {
-        auto request = new Request;
+        Request request;
         request.requestId = randomUUID;
         request.op = "eval";
+        request.args = Json.emptyObject;
         request.args["gremlin"] = Json(queryString);
 
-        m_requests[request.requestId] = request;
+        m_responses[request.requestId] = new GremlinClientResponse;
 
         send(request);
 
-        while (request.response.status.code == HTTPStatus.init) {
-            yield;
-        }
+        return async({
+            while (m_responses[request.requestId].status.code == HTTPStatus.init && m_socket.connected) {
+                yield;
+            }
 
-        auto response = new GremlinClientResponse(request);
-        
-        m_requests.remove(request.requestId);
-
-        return response;
+            return m_responses[request.requestId];
+        });
     }
 
     void send(scope Request request) {
@@ -147,18 +149,11 @@ private class GremlinConnection {
 }
 
 @safe
-private class Request {
+private struct Request {
     UUID requestId;
     string op;
     string processor;
     Json args;
-
-    @ignore
-    Response response;
-
-    this() {
-        args = Json.emptyObject;
-    }
 }
 
 @safe

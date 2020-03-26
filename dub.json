@@ -4,10 +4,10 @@
 	],
 	"copyright": "Copyright © 2019, lljochemll",
 	"dependencies": {
-		"vibe-d:core": "~>0.8.0",
-		"vibe-d:data": "~>0.8.0",
-		"vibe-d:http": "~>0.8.0",
-		"vibe-d:inet": "~>0.8.0"
+		"vibe-d:core": "~>0.8",
+		"vibe-d:data": "~>0.8",
+		"vibe-d:http": "~>0.8",
+		"vibe-d:inet": "~>0.8"
 	},
 	"description": "Gremlin client",
 	"license": "MIT",
