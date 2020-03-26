@@ -9,6 +9,7 @@
 		"vibe-d:http": "~>0.8",
 		"vibe-d:inet": "~>0.8"
 	},
+	"targetType": "library",
 	"description": "Gremlin client",
 	"license": "MIT",
 	"name": "gremlind"
